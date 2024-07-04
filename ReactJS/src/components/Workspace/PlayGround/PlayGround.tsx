@@ -44,11 +44,10 @@ const PlayGround: React.FC<PlayGroundProps> = ({ problem, user, setSolved }) => 
         let totalMemory = 0;
         let firstFailedTestCase: any = null;
         let syntaxError = '';
-
         for (const testCase of problem.testCases) {
             try {
                 const sanitizedInput = testCase.input.replace(/\n/g, ' ');
-                const response = await fetch('http://localhost:3001/execute', {
+                const response = await fetch('https://psy-coding-nodejs.vercel.app/execute', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
