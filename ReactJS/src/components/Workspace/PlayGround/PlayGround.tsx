@@ -48,7 +48,7 @@ const PlayGround: React.FC<PlayGroundProps> = ({ problem, user, setSolved }) => 
         for (const testCase of problem.testCases) {
             try {
                 const sanitizedInput = testCase.input.replace(/\n/g, ' ');
-                const response = await fetch('http://localhost:3001/execute', {
+                const response = await fetch('https://psy-coding-nodejs.vercel.app/execute', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
