@@ -268,7 +268,7 @@ const PlayGround: React.FC<PlayGroundProps> = ({ problem, user, setSolved }) => 
                         </div>
                     </div>
                     <div className='flex'>
-                        {problem.testCases.slice(0, 3).map((example: any, index: number) => (
+                        {Array.from({ length: 3 }).map((_, index: number) => (
                             <div
                                 className='mr-2 items-start mt-2'
                                 key={index}
@@ -298,7 +298,7 @@ const PlayGround: React.FC<PlayGroundProps> = ({ problem, user, setSolved }) => 
                 </div>
 
             </Split>
-            <EditorFooter handleSubmit={handleSubmit} isLoading={isLoading} problemId={problem.problemId} user={user}/>
+            <EditorFooter handleSubmit={handleSubmit} isLoading={isLoading} problemId={problem.problemId} user={user} />
         </div>
     );
 }
