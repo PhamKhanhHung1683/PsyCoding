@@ -15,7 +15,7 @@ import {
     Textarea,
 } from '@chakra-ui/react';
 import { firestore } from '../../firebase/firebase';
-import { collection, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from 'firebase/firestore';
 import { toast } from 'react-toastify';
 
 type TestCase = {
@@ -132,6 +132,58 @@ const UpdateProblemModal: React.FC<UpdateProblemModalProps> = ({ isUpdateOpen, o
     
             // Thực hiện cập nhật vào cơ sở dữ liệu
             await updateDoc(doc(firestore, 'problems', problem.id), updatedProblem);
+
+            // Cập nhật collection categories
+            const categoriesCollection = collection(firestore, 'categories');
+
+            // Lấy danh sách các category hiện tại có trong vấn đề cũ
+            const oldCategories = problem.categories;
+
+            // Lặp qua từng category
+            for (const category of oldCategories) {
+                // Nếu category không còn nằm trong categories mới và tồn tại trong Firestore
+                if (!updatedProblem.categories.includes(category)) {
+                    const categoryDoc = doc(categoriesCollection, category);
+                    const categoryDocSnapshot = await getDoc(categoryDoc);
+
+                    if (categoryDocSnapshot.exists()) {
+                        const categoryData = categoryDocSnapshot.data();
+                        const newProblemCount = (categoryData.problemCount || 0) - 1;
+
+                        if (newProblemCount > 0) {
+                            await updateDoc(categoryDoc, {
+                                problemCount: newProblemCount,
+                            });
+                        } else {
+                            await deleteDoc(categoryDoc);
+                        }
+                    }
+                }
+            }
+
+            // Lặp qua từng category mới
+            for (const category of updatedProblem.categories) {
+                // Nếu category không thuộc danh sách category cũ và tồn tại trong Firestore
+                if (!oldCategories.includes(category)) {
+                    const categoryDoc = doc(categoriesCollection, category);
+                    const categoryDocSnapshot = await getDoc(categoryDoc);
+
+                    if (categoryDocSnapshot.exists()) {
+                        const categoryData = categoryDocSnapshot.data();
+                        const newProblemCount = (categoryData.problemCount || 0) + 1;
+
+                        await updateDoc(categoryDoc, {
+                            problemCount: newProblemCount,
+                        });
+                    } else {
+                        // Nếu category không tồn tại, thêm mới vào Firestore
+                        await setDoc(categoryDoc, {
+                            problemCount: 1,
+                        });
+                    }
+                }
+            }
+
             toast.success(`Problem with ID: ${problem.id} updated successfully!`, {
                 position: "top-center",
                 autoClose: 5000,
@@ -160,7 +212,6 @@ const UpdateProblemModal: React.FC<UpdateProblemModalProps> = ({ isUpdateOpen, o
         }
     };
     
-
     const handleTestCaseChange = (index: number, field: keyof TestCase, value: string) => {
         const updatedTestCases = [...testCases];
         updatedTestCases[index][field] = value;
@@ -235,6 +286,7 @@ const UpdateProblemModal: React.FC<UpdateProblemModalProps> = ({ isUpdateOpen, o
                             value={description} 
                             onChange={(e) => setDescription(e.target.value)} 
                             placeholder="Enter the problem description (required)" 
+                            rows={10}
                         />
                     </FormControl>
                     <FormControl id="testCases" mb={4}>
@@ -245,13 +297,13 @@ const UpdateProblemModal: React.FC<UpdateProblemModalProps> = ({ isUpdateOpen, o
                                     placeholder={`Input ${index + 1} (required)`}
                                     value={testCase.input}
                                     onChange={(e) => handleTestCaseChange(index, 'input', e.target.value)}
-                                    rows={3}
+                                    rows={5}
                                 />
                                 <Textarea
                                     placeholder={`Expected Output ${index + 1} (required)`}
                                     value={testCase.expectedOutput}
                                     onChange={(e) => handleTestCaseChange(index, 'expectedOutput', e.target.value)}
-                                    rows={3}
+                                    rows={5}
                                 />
                                 <Button type="button" onClick={() => removeTestCase(index)}>Remove Test Case</Button>
                             </div>

@@ -2,46 +2,78 @@ import React, { useEffect, useState } from 'react';
 import { BsCheckCircle } from 'react-icons/bs';
 import { firestore } from '../../firebase/firebase';
 import { Link } from 'react-router-dom';
-import { collection, doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, query, where } from 'firebase/firestore';
 import {
     Menu,
     MenuButton,
     MenuList,
     MenuItem,
     Button,
-} from '@chakra-ui/react'
+} from '@chakra-ui/react';
 
 type ProblemTableProps = {
+    selectedCategories: string[];
     setLoadingProblems: React.Dispatch<React.SetStateAction<boolean>>;
     user: any;
     onDeleteClick: (problem: any) => void;
     onUpdateClick: (problem: any) => void;
 };
 
-const ProblemTable: React.FC<ProblemTableProps> = ({ setLoadingProblems, user, onDeleteClick, onUpdateClick }) => {
+const ProblemTable: React.FC<ProblemTableProps> = ({ selectedCategories, setLoadingProblems, user, onDeleteClick, onUpdateClick }) => {
     const [problems, setProblems] = useState<any[]>([]);
     const solvedProblems = useGetSolvedProblems(user);
 
     useEffect(() => {
-        const unsubscribe = onSnapshot(collection(firestore, 'problems'), (querySnapshot) => {
-            const problemsData: any[] = [];
-            querySnapshot.forEach((doc) => {
-                problemsData.push({
-                    id: doc.id,
-                    ...doc.data()
-                });
-            });
-            setProblems(problemsData);
-            setLoadingProblems(false);
-        }, (error) => {
-            console.error('Error fetching problems:', error);
-            setLoadingProblems(false);
-        });
+        const fetchProblems = async () => {
+            try {
+                setLoadingProblems(true);
+                let problemsRef = collection(firestore, 'problems');
 
-        return () => {
-            unsubscribe();
+                if (selectedCategories.length > 0) {
+                    const finalQuery = query(problemsRef, where('categories', 'array-contains-any', selectedCategories));
+
+                    const unsubscribe = onSnapshot(finalQuery, (querySnapshot) => {
+                        const problemsData: any[] = [];
+                        querySnapshot.forEach((doc) => {
+                            problemsData.push({
+                                id: doc.id,
+                                ...doc.data()
+                            });
+                        });
+                        setProblems(problemsData);
+                        setLoadingProblems(false);
+                    }, (error) => {
+                        console.error('Error fetching problems:', error);
+                        setLoadingProblems(false);
+                    });
+
+                    return () => unsubscribe();
+                } else {
+                    const unsubscribe = onSnapshot(problemsRef, (querySnapshot) => {
+                        const problemsData: any[] = [];
+                        querySnapshot.forEach((doc) => {
+                            problemsData.push({
+                                id: doc.id,
+                                ...doc.data()
+                            });
+                        });
+                        setProblems(problemsData);
+                        setLoadingProblems(false);
+                    }, (error) => {
+                        console.error('Error fetching problems:', error);
+                        setLoadingProblems(false);
+                    });
+
+                    return () => unsubscribe();
+                }
+            } catch (error) {
+                console.error('Error fetching problems:', error);
+                setLoadingProblems(false);
+            }
         };
-    }, [setLoadingProblems]);
+
+        fetchProblems();
+    }, [selectedCategories, setLoadingProblems]);
 
     return (
         <>
@@ -68,16 +100,15 @@ const ProblemTable: React.FC<ProblemTableProps> = ({ setLoadingProblems, user, o
                                 {problem.categories?.map((category: string, index: number) => (
                                     <p key={index}>{category}</p>
                                 ))}
-
                             </td>
                             {user && user.role === "admin" && (
                                 <>
                                     <td className='px-1 py-4'>
-                                            <Link to={`problemSubmissions/${problem.id}`}>
-                                                <Button>
-                                                    View
-                                                </Button>
-                                            </Link>
+                                        <Link to={`problemSubmissions/${problem.id}`}>
+                                            <Button>
+                                                View
+                                            </Button>
+                                        </Link>
                                     </td>
                                     <td className='px-1 py-4'>
                                         <Menu>
@@ -92,15 +123,14 @@ const ProblemTable: React.FC<ProblemTableProps> = ({ setLoadingProblems, user, o
                                     </td>
                                 </>
                             )}
-
                         </tr>
-
                     );
                 })}
             </tbody>
         </>
     );
-}
+};
+
 export default ProblemTable;
 
 function useGetSolvedProblems(user: any) {

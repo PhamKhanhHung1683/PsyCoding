@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import Topbar from '../../components/Topbar/Topbar';
 import ProblemTable from '../../components/ProblemTable/ProblemTable';
-import { useDisclosure } from '@chakra-ui/react';
+import { Button, Tag, TagCloseButton, TagLabel, useDisclosure, Wrap } from '@chakra-ui/react';
 import DeleteProblemModal from '../../components/Modals/DeleteProblemModal';
 import UpdateProblemModal from '../../components/Modals/UpdateProblemModal';
+import FilterModal from '../../components/Modals/FilterModal';
 
 type HomePageProps = {
   user: any;
@@ -19,7 +20,7 @@ const HomePage: React.FC<HomePageProps> = ({ user }) => {
             className='text-2xl text-center text-gray-700 dark:text-gray-400 font-medium
           uppercase mt-10 mb-5'
           >
-            Your account is banned  
+            Your account is banned
           </h1>
         </main>
       </>
@@ -28,7 +29,11 @@ const HomePage: React.FC<HomePageProps> = ({ user }) => {
   const [loadingProblems, setLoadingProblems] = useState(true);
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   const { isOpen: isUpdateOpen, onOpen: onUpdateOpen, onClose: onUpdateClose } = useDisclosure();
+  const { isOpen: isFilterOpen, onOpen: onFilterOpen, onClose: onFilterClose } = useDisclosure();
   const [selectedProblem, setSelectedProblem] = useState<any>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  console.log(selectedCategories);
 
   const handleDeleteClick = (problem: any) => {
     setSelectedProblem(problem);
@@ -44,6 +49,16 @@ const HomePage: React.FC<HomePageProps> = ({ user }) => {
     onUpdateClose();
   };
 
+  const handleFilterApply = async (categories: string[]) => {
+    setSelectedCategories(categories);
+
+  };
+
+  const handleRemoveCategory = (category: string) => {
+    const newSelectedCategories = selectedCategories.filter(c => c !== category);
+    handleFilterApply(newSelectedCategories);
+  };
+
   return (
     <>
       <main className="min-h-screen">
@@ -54,6 +69,21 @@ const HomePage: React.FC<HomePageProps> = ({ user }) => {
         >
           PROBLEMS
         </h1>
+        <div className="flex justify-center my-4"> {/* Canh giữa nút Filter */}
+          <Button onClick={onFilterOpen}>Filter by category</Button>
+        </div>
+        <div className="flex justify-center my-4"> {/* Canh giữa nút Filter */}
+        {selectedCategories.length > 0 && (
+          <Wrap spacing={4} className="my-4 justify-center">
+            {selectedCategories.map((category, index) => (
+              <Tag key={index} size="lg" borderRadius="full" variant="solid" colorScheme="orange">
+                <TagLabel>{category}</TagLabel>
+                <TagCloseButton onClick={() => handleRemoveCategory(category)} />
+              </Tag>
+            ))}
+          </Wrap>
+        )}
+        </div>
         <div className='relative overflow-x-auto mx-auto px-6 pb-10'>
           {loadingProblems && (
             <div className='max-w-[1200px] mx-auto sm:w-7/12 w-full animate-pulse'>
@@ -91,7 +121,12 @@ const HomePage: React.FC<HomePageProps> = ({ user }) => {
                 </tr>
               </thead>
             )}
-            <ProblemTable setLoadingProblems={setLoadingProblems} user={user} onDeleteClick={handleDeleteClick} onUpdateClick={handleUpdateClick} />
+            <ProblemTable
+              setLoadingProblems={setLoadingProblems}
+              user={user} onDeleteClick={handleDeleteClick}
+              onUpdateClick={handleUpdateClick}
+              selectedCategories={selectedCategories}
+            />
           </table>
         </div>
       </main>
@@ -109,6 +144,7 @@ const HomePage: React.FC<HomePageProps> = ({ user }) => {
           />
         </>
       )}
+      <FilterModal isOpen={isFilterOpen} onClose={onFilterClose} onApply={handleFilterApply} />
     </>
   );
 };
