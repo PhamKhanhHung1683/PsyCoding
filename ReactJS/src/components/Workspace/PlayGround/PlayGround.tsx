@@ -124,7 +124,7 @@ const PlayGround: React.FC<PlayGroundProps> = ({ problem, user, setSolved }) => 
                         console.log(data.output)
                         toast.warn('Syntax error!'
                             , {
-                                position: "bottom-left",
+                                position: "top-center",
                                 autoClose: 5000,
                                 hideProgressBar: true,
                                 closeOnClick: true,
@@ -184,7 +184,7 @@ const PlayGround: React.FC<PlayGroundProps> = ({ problem, user, setSolved }) => 
             };
             await addDoc(collection(firestore, 'submissions'), submission);
             toast.success("Submission saved successfully.", {
-                position: "bottom-left",
+                position: "top-center",
                 autoClose: 5000,
                 hideProgressBar: true,
                 closeOnClick: true,

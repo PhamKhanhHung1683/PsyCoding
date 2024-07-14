@@ -79,6 +79,7 @@ const UserSubmissionsPage: React.FC<UserSubmissionsPageProps> = ({ user }) => {
 export default UserSubmissionsPage;
 
 const SubmissionRow: React.FC<{ submission: any }> = ({ submission }) => {
+    const {problem} = useGetProblem(submission.problemId);
     return (
         <Tr>
             <Td>
@@ -86,7 +87,7 @@ const SubmissionRow: React.FC<{ submission: any }> = ({ submission }) => {
                     {submission.id}
                 </Link>
             </Td>
-            <Td>{submission.problemTitle}</Td>
+            <Td>{problem?.title}</Td>
             <Td>{new Date(submission.createdAt.seconds * 1000).toLocaleString()}</Td>
             <Td>
                 {submission.passedCount === submission.totalCount && (
@@ -169,3 +170,35 @@ const useGetUser = (userId: string | undefined) => {
 
     return { User, loadingUser, errorUser };
 }
+
+const useGetProblem = (problemId: string | undefined) => {
+    const [problem, setProblem] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchProblem = async () => {
+            if (!problemId) return;
+            try {
+                const docRef = doc(firestore, "problems", problemId);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    setProblem(docSnap.data());
+                } else {
+                    setError("No such document!");
+                }
+            } catch (err) {
+                setError("Failed to fetch problem");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProblem();
+        return () => {
+            // Cleanup function if needed
+        };
+    }, [problemId]);
+
+    return { problem, loading, error };
+};
